@@ -482,49 +482,182 @@ static const char * get_param_default(lv_xml_component_scope_t * scope, const ch
     return NULL;
 }
 
-static void resolve_params(lv_xml_component_scope_t * item_scope, lv_xml_component_scope_t * parent_scope,
-                           const char ** item_attrs, const char ** parent_attrs)
+static const char ** resolve_params(lv_xml_component_scope_t * item_scope, lv_xml_component_scope_t * parent_scope,
+                                    const char ** item_attrs, const char ** parent_attrs)
 {
+    /* Count the number of attributes */
+    uint32_t attr_count = 0;
+    while(item_attrs[attr_count]) attr_count += 2;
+
+    /* Create a copy of the attributes array */
+    const char ** new_attrs = lv_malloc((attr_count + 1) * sizeof(char *));
+    if(new_attrs == NULL) return NULL;
+
+    /* Copy all attributes and process parameter substitution */
     uint32_t i;
-    for(i = 0; item_attrs[i]; i += 2) {
+    for(i = 0; i < attr_count; i += 2) {
         const char * name = item_attrs[i];
         const char * value = item_attrs[i + 1];
-        if(lv_streq(name, "styles")) continue; /*Styles will handle it themselves*/
-        if(value[0] == '$') {
-            /*E.g. the ${my_color} value is the my_color attribute name on the parent*/
-            const char * name_clean = &value[1]; /*skips `$`*/
 
-            const char * type = get_param_type(item_scope, name_clean);
-            if(type == NULL) {
-                LV_LOG_WARN("'%s' parameter is not defined on '%s'", name_clean, item_scope->name);
-            }
-            const char * ext_value = lv_xml_get_value_of(parent_attrs, name_clean);
-            if(ext_value) {
-                /*If the value is not resolved earlier (e.g. it's a top level element created manually)
-                 * use the default value*/
-                if(ext_value[0] == '#' || ext_value[0] == '$') {
-                    ext_value = get_param_default(item_scope, name_clean);
-                }
-                else if(lv_streq(type, "style")) {
-                    lv_xml_style_t * s = lv_xml_get_style_by_name(parent_scope, ext_value);
-                    ext_value = s->long_name;
-                }
-            }
-            else {
-                /*If the API attribute is not provide don't set it*/
-                ext_value = get_param_default(item_scope, name_clean);
-            }
-            if(ext_value) {
-                item_attrs[i + 1] = ext_value;
-            }
-            else {
-                /*Not set and no default value either
-                 *Don't set this property*/
-                item_attrs[i] = "";
-                item_attrs[i + 1] = "";
-            }
+        /* Copy the attribute name */
+        new_attrs[i] = name;
+
+        if(lv_streq(name, "styles")) {
+            /* Styles will handle parameter substitution themselves */
+            new_attrs[i + 1] = value;
+            continue;
         }
+
+        /* Check if the value contains parameter substitution */
+        if(lv_strchr(value, '$') != NULL) {
+            /* Calculate the maximum possible length for the result string */
+            size_t input_len = lv_strlen(value);
+            size_t max_result_len = input_len * 4; /* Conservative estimate */
+            char * result = lv_malloc(max_result_len);
+            if(result == NULL) {
+                new_attrs[i + 1] = "";
+                continue;
+            }
+
+            result[0] = '\0';
+            const char * current = value;
+
+            while(*current) {
+                const char * param_start = lv_strchr(current, '$');
+                if(param_start == NULL) {
+                    /* No more parameters, append the rest of the string */
+                    if(lv_strlen(result) + lv_strlen(current) < max_result_len) {
+                        lv_strcat(result, current);
+                    }
+                    break;
+                }
+
+                /* Append text before the parameter */
+                size_t prefix_len = param_start - current;
+                if(prefix_len > 0) {
+                    char * prefix = lv_malloc(prefix_len + 1);
+                    if(prefix == NULL) {
+                        lv_free(result);
+                        new_attrs[i + 1] = "";
+                        goto next_attr;
+                    }
+                    lv_memcpy(prefix, current, prefix_len);
+                    prefix[prefix_len] = '\0';
+                    if(lv_strlen(result) + prefix_len < max_result_len) {
+                        lv_strcat(result, prefix);
+                    }
+                    lv_free(prefix);
+                }
+
+                /* Extract parameter name */
+                const char * param_name_start = param_start + 1;
+                const char * param_name_end = param_name_start;
+
+                /* Find the end of the parameter name (alphanumeric + underscore) */
+                while(*param_name_end && ((*param_name_end >= 'a' && *param_name_end <= 'z') ||
+                                          (*param_name_end >= 'A' && *param_name_end <= 'Z') ||
+                                          (*param_name_end >= '0' && *param_name_end <= '9') ||
+                                          *param_name_end == '_')) {
+                    param_name_end++;
+                }
+
+                if(param_name_end > param_name_start) {
+                    /* Extract parameter name */
+                    size_t param_name_len = param_name_end - param_name_start;
+                    char * param_name = lv_malloc(param_name_len + 1);
+                    if(param_name == NULL) {
+                        lv_free(result);
+                        new_attrs[i + 1] = "";
+                        goto next_attr;
+                    }
+                    lv_memcpy(param_name, param_name_start, param_name_len);
+                    param_name[param_name_len] = '\0';
+
+                    /* Get parameter type and value */
+                    const char * type = get_param_type(item_scope, param_name);
+                    if(type == NULL) {
+                        LV_LOG_WARN("'%s' parameter is not defined on '%s'", param_name, item_scope->name);
+                        if(lv_strlen(result) + 1 + lv_strlen(param_name) < max_result_len) {
+                            lv_strcat(result, "$");
+                            lv_strcat(result, param_name);
+                        }
+                    }
+                    else {
+                        const char * ext_value = lv_xml_get_value_of(parent_attrs, param_name);
+                        if(ext_value) {
+                            /* If the value is not resolved earlier, use the default value */
+                            if(ext_value[0] == '#' || ext_value[0] == '$') {
+                                ext_value = get_param_default(item_scope, param_name);
+                            }
+                            else if(lv_streq(type, "style")) {
+                                lv_xml_style_t * s = lv_xml_get_style_by_name(parent_scope, ext_value);
+                                if(s) ext_value = s->long_name;
+                            }
+                        }
+                        else {
+                            /* If the API attribute is not provided, use the default value */
+                            ext_value = get_param_default(item_scope, param_name);
+                        }
+
+                        if(ext_value) {
+                            if(lv_strlen(result) + lv_strlen(ext_value) < max_result_len) {
+                                lv_strcat(result, ext_value);
+                            }
+                        }
+                        else {
+                            /* No value found, keep the parameter as-is */
+                            if(lv_strlen(result) + 1 + lv_strlen(param_name) < max_result_len) {
+                                lv_strcat(result, "$");
+                                lv_strcat(result, param_name);
+                            }
+                        }
+                    }
+
+                    lv_free(param_name);
+                }
+                else {
+                    /* Invalid parameter name, keep the $ as-is */
+                    if(lv_strlen(result) + 1 < max_result_len) {
+                        lv_strcat(result, "$");
+                    }
+                }
+
+                current = param_name_end;
+            }
+
+            new_attrs[i + 1] = result;
+        }
+        else {
+            /* No parameter substitution needed, copy the original value */
+            new_attrs[i + 1] = value;
+        }
+next_attr:
+        ;
     }
+
+    /* Null-terminate the array */
+    new_attrs[attr_count] = NULL;
+
+    return new_attrs;
+}
+
+static void free_resolved_attrs(const char ** attrs, const char ** original_attrs)
+{
+    if(attrs == NULL) return;
+
+    /* Free any allocated strings (parameter substitution results) */
+    uint32_t i = 0;
+    while(attrs[i]) {
+        /* Free values that were allocated by parameter substitution
+         * (values that are different from the original) */
+        if(attrs[i + 1] != original_attrs[i + 1]) {
+            lv_free((void *)attrs[i + 1]);
+        }
+        i += 2; /* Skip to next attribute pair */
+    }
+
+    /* Free the attributes array itself */
+    lv_free(attrs);
 }
 
 static void resolve_consts(const char ** item_attrs, lv_xml_component_scope_t * scope)
@@ -579,11 +712,24 @@ static void view_start_element_handler(void * user_data, const char * name, cons
      *E.g. <my_button x="10" title="Hello"/>
      *In `attrs` we have the attributes of child of the view.
      *E.g. in `my_button` `<lv_label x="5" text="${title}".
-     *This function changes the pointers in the child attributes if the start with '$'
-     *with the corresponding parameter. E.g. "text", "${title}" -> "text", "Hello" */
-    resolve_params(&state->scope, state->parent_scope, attrs, state->parent_attrs);
+     *This function creates a new attributes array with parameter substitution
+     *E.g. "text", "${title}" -> "text", "Hello" */
+    const char ** original_attrs = attrs;
+    const char ** resolved_attrs = resolve_params(&state->scope, state->parent_scope, attrs, state->parent_attrs);
+    bool attrs_were_resolved = false;
 
-    resolve_consts(attrs, &state->scope);
+    if(resolved_attrs == NULL) {
+        /* Memory allocation failed, use original attrs */
+        resolved_attrs = attrs;
+    }
+    else if(resolved_attrs != attrs) {
+        attrs_were_resolved = true;
+    }
+
+    resolve_consts(resolved_attrs, &state->scope);
+
+    /* Use resolved_attrs for the rest of the processing */
+    attrs = resolved_attrs;
 
     void * item = NULL;
     /* Select the widget specific parser type based on the name */
@@ -614,6 +760,10 @@ static void view_start_element_handler(void * user_data, const char * name, cons
     /* If it isn't a component either then it is unknown */
     if(item == NULL) {
         LV_LOG_WARN("'%s' is not a known widget, element, or component", name);
+        /* Clean up resolved attributes before returning */
+        if(attrs_were_resolved) {
+            free_resolved_attrs(resolved_attrs, original_attrs);
+        }
         return;
     }
 
@@ -622,6 +772,11 @@ static void view_start_element_handler(void * user_data, const char * name, cons
 
     if(is_view) {
         state->view = item;
+    }
+
+    /* Clean up resolved attributes */
+    if(attrs_were_resolved) {
+        free_resolved_attrs(resolved_attrs, original_attrs);
     }
 }
 
