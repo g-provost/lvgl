@@ -343,6 +343,49 @@ void * lv_observer_get_user_data(const lv_observer_t * observer);
 void lv_subject_notify(lv_subject_t * subject);
 
 /**
+ * Add an event handler to increment (or decrement) the value of a subject on a trigger.
+ * @param obj       pointer to a widget
+ * @param subject   pointer to a subject to change
+ * @param trigger   the trigger on which the subject should be changed
+ * @param step      value to add on trigger
+ * @param min       the minimum value
+ * @param max       the maximum value
+ */
+void lv_obj_add_subject_increment_event(lv_obj_t * obj, lv_subject_t * subject, lv_event_code_t trigger, int32_t step,
+                                        int32_t min, int32_t max);
+
+/**
+ * Set the value of an integer subject.
+ * @param obj       pointer to a widget
+ * @param subject   pointer to a subject to change
+ * @param trigger   the trigger on which the subject should be changed
+ * @param value     the value to set
+ */
+void lv_obj_add_subject_set_int_event(lv_obj_t * obj, lv_subject_t * subject, lv_event_code_t trigger, int32_t value);
+
+/**
+ * Set the value of a string subject.
+ * @param obj       pointer to a widget
+ * @param subject   pointer to a subject to change
+ * @param trigger   the trigger on which the subject should be changed
+ * @param value     the value to set
+ */
+void lv_obj_add_subject_set_string_event(lv_obj_t * obj, lv_subject_t * subject, lv_event_code_t trigger,
+                                         const char * value);
+
+/**
+ * Disable a style if a subject's value is not equal to a reference value
+ * @param obj           pointer to Widget
+ * @param style         pointer to a style
+ * @param selector      pointer to a selector
+ * @param subject       pointer to Subject
+ * @param ref_value     reference value to compare Subject's value with
+ * @return              pointer to newly-created Observer
+ */
+lv_observer_t * lv_obj_bind_style(lv_obj_t * obj, const lv_style_t * style, lv_style_selector_t selector,
+                                  lv_subject_t * subject, int32_t ref_value);
+
+/**
  * Set Widget's flag(s) if an integer Subject's value is equal to a reference value, clear flag otherwise.
  * @param obj           pointer to Widget
  * @param subject       pointer to Subject

@@ -117,9 +117,7 @@ int32_t lv_xml_atoi_split(const char ** str, char delimiter)
 
 int32_t lv_xml_atoi(const char * str)
 {
-
     return lv_xml_atoi_split(&str, '\0');
-
 }
 
 #if LV_USE_FLOAT
