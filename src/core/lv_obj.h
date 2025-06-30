@@ -43,7 +43,7 @@ extern "C" {
  * Possible states of a widget.
  * OR-ed values are possible
  */
-enum {
+enum _lv_state_t {
     LV_STATE_DEFAULT     =  0x0000,
     LV_STATE_CHECKED     =  0x0001,
     LV_STATE_FOCUSED     =  0x0002,
@@ -68,7 +68,7 @@ enum {
  * Not all parts are used by every widget
  */
 
-enum {
+enum _lv_part_t {
     LV_PART_MAIN         = 0x000000,   /**< A background like rectangle*/
     LV_PART_SCROLLBAR    = 0x010000,   /**< The scrollbar(s)*/
     LV_PART_INDICATOR    = 0x020000,   /**< Indicator, e.g. for slider, bar, switch, or the tick box of the checkbox*/
@@ -116,20 +116,21 @@ typedef enum {
     LV_OBJ_FLAG_FLEX_IN_NEW_TRACK = (1L << 21),     /**< Start a new flex track on this item*/
 #endif
     LV_OBJ_FLAG_EVENT_TRICKLE   = (1L << 22), /**< Propagate the events to the children too*/
+    LV_OBJ_FLAG_STATE_TRICKLE   = (1L << 23), /**< Propagate the states to the children too*/
 
-    LV_OBJ_FLAG_LAYOUT_1        = (1L << 23), /**< Custom flag, free to use by layouts*/
-    LV_OBJ_FLAG_LAYOUT_2        = (1L << 24), /**< Custom flag, free to use by layouts*/
+    LV_OBJ_FLAG_LAYOUT_1        = (1L << 24), /**< Custom flag, free to use by layouts*/
+    LV_OBJ_FLAG_LAYOUT_2        = (1L << 25), /**< Custom flag, free to use by layouts*/
 
-    LV_OBJ_FLAG_WIDGET_1        = (1L << 25), /**< Custom flag, free to use by widget*/
-    LV_OBJ_FLAG_WIDGET_2        = (1L << 26), /**< Custom flag, free to use by widget*/
-    LV_OBJ_FLAG_USER_1          = (1L << 27), /**< Custom flag, free to use by user*/
-    LV_OBJ_FLAG_USER_2          = (1L << 28), /**< Custom flag, free to use by user*/
-    LV_OBJ_FLAG_USER_3          = (1L << 29), /**< Custom flag, free to use by user*/
-    LV_OBJ_FLAG_USER_4          = (1L << 30), /**< Custom flag, free to use by user*/
+    LV_OBJ_FLAG_WIDGET_1        = (1L << 26), /**< Custom flag, free to use by widget*/
+    LV_OBJ_FLAG_WIDGET_2        = (1L << 27), /**< Custom flag, free to use by widget*/
+    LV_OBJ_FLAG_USER_1          = (1L << 28), /**< Custom flag, free to use by user*/
+    LV_OBJ_FLAG_USER_2          = (1L << 29), /**< Custom flag, free to use by user*/
+    LV_OBJ_FLAG_USER_3          = (1L << 30), /**< Custom flag, free to use by user*/
+    LV_OBJ_FLAG_USER_4          = (1L << 31), /**< Custom flag, free to use by user*/
 } lv_obj_flag_t;
 
 #if LV_USE_OBJ_PROPERTY
-enum {
+enum _lv_signed_prop_id_t {
     /*OBJ flag properties */
     LV_PROPERTY_ID(OBJ, FLAG_START,                 LV_PROPERTY_TYPE_INT,       0),
     LV_PROPERTY_ID(OBJ, FLAG_HIDDEN,                LV_PROPERTY_TYPE_INT,       0),

@@ -17,7 +17,7 @@ This implementation consists of:
 
 :Subjects:   (in global memory or heap) are "logic packages", each containing the
              value being "observed" and its type (integer (``int32_t``), a string, a
-             pointer, an :cpp:type:`lv_color_t`, a :cpp_type:`float`, or a group);
+             pointer, an :cpp:type:`lv_color_t`, a ``float``, or a group);
 
 :Observers:  (zero or more per Subject, always dynamically-allocated) are always
              attached to exactly one Subject, and provide user-defined notifications
@@ -114,7 +114,7 @@ To initialize a Subject use ``lv_subject_init_<type>(&subject, params, init_valu
 The following initialization functions exist, one for each of the Subject types:
 
 :Integer: void :cpp:expr:`lv_subject_init_int(subject, int_value)`
-:Float:   void :cpp:expr:`lv_subject_init_float(subject, int_value)`
+:Float:   void :cpp:expr:`lv_subject_init_float(subject, float_value)`
 :String:  void :cpp:expr:`lv_subject_init_string(subject, buf, prev_buf, buf_size, initial_string)`
 :Pointer: void :cpp:expr:`lv_subject_init_pointer(subject, ptr)`
 :Color:   void :cpp:expr:`lv_subject_init_color(subject, color)`
@@ -502,7 +502,7 @@ If ``NULL`` is passed for the ``format_string`` argument:
 
 :string or pointer Subject:  Updates expect the pointer to point to a NUL-terminated string.
 :integer Subject:            The Label will simply display the number. Equivalent to "%d".
-:integer Subject:            The Label will display the value with "%0.1f" format string.
+:float Subject:            The Label will display the value with "%0.1f" format string.
 
 **Example:**  "%d |deg|\C"
 
@@ -579,7 +579,7 @@ Increments the subject's value by `step`, clamped between `min` and `max`.
 
 For example:
 
-:cpp:expr:`lv_obj_add_subject_increment_event(button1, subject1, LV_EVENT_CLICKED, 5, -10, 80);`
+:cpp:expr:`lv_obj_add_subject_increment_event(button1, subject1, LV_EVENT_CLICKED, 5, -10, 80)`
 
 This will increment `subject1` by 5 when `button1` is clicked.
 The resulting value will be constrained to the range -10 to 80.

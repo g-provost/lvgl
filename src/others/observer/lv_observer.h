@@ -114,6 +114,38 @@ int32_t lv_subject_get_int(lv_subject_t * subject);
  */
 int32_t lv_subject_get_previous_int(lv_subject_t * subject);
 
+#if LV_USE_FLOAT
+
+/**
+ * Initialize an float-type Subject.
+ * @param subject   pointer to Subject
+ * @param value     initial value
+ */
+void lv_subject_init_float(lv_subject_t * subject, float value);
+
+/**
+ * Set value of an float Subject and notify Observers.
+ * @param subject   pointer to Subject
+ * @param value     new value
+ */
+void lv_subject_set_float(lv_subject_t * subject, float value);
+
+/**
+ * Get current value of an float Subject.
+ * @param subject   pointer to Subject
+ * @return          current value
+ */
+float lv_subject_get_float(lv_subject_t * subject);
+
+/**
+ * Get previous value of an float Subject.
+ * @param subject   pointer to Subject
+ * @return          current value
+ */
+float lv_subject_get_previous_float(lv_subject_t * subject);
+
+#endif /*LV_USE_FLOAT*/
+
 /**
  * Initialize an integer-type Subject with min-max range.
  * @param subject   pointer to Subject
