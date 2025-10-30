@@ -85,6 +85,7 @@ static lv_xml_test_t test;
 static lv_display_t * test_display;
 static lv_obj_t * cursor;
 static lv_tick_get_cb_t tick_cb_original;
+static bool test_initialized = false;
 
 /**********************
  *      MACROS
@@ -235,6 +236,7 @@ void lv_xml_test_run_init(void)
     }
     lv_refr_now(normal_display);
     test.step_act = 0;
+    test_initialized = true;
 }
 
 bool lv_xml_test_run_next(uint32_t slowdown)
@@ -251,10 +253,14 @@ bool lv_xml_test_run_next(uint32_t slowdown)
 
 void lv_xml_test_run_stop(void)
 {
+    if(!test_initialized) {
+        return;
+    }
     lv_obj_delete(cursor);
     lv_tick_set_cb(tick_cb_original);
     lv_display_delete(test_display);
     lv_test_indev_delete_all();
+    test_initialized = false;
 }
 
 

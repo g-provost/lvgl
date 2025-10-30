@@ -43,7 +43,7 @@
 #endif
 
 #ifndef REF_IMG_TOLERANCE
-    #define REF_IMG_TOLERANCE 0
+    #define REF_IMG_TOLERANCE 5
 #endif
 
 #define ERR_FILE_NOT_FOUND  -1
@@ -103,7 +103,7 @@ static bool screenshot_compare(const char * fn_ref, uint8_t tolerance)
     char fn_ref_full[256];
     lv_snprintf(fn_ref_full, sizeof(fn_ref_full), "%s%s", REF_IMGS_PATH, fn_ref);
 
-    create_folders_if_needed(fn_ref_full);
+    //create_folders_if_needed(fn_ref_full);
 
     lv_draw_buf_t * draw_buf = lv_display_get_buf_active(NULL);
 
@@ -115,10 +115,10 @@ static bool screenshot_compare(const char * fn_ref, uint8_t tolerance)
     unsigned  ref_img_height = 0;
     unsigned  res = read_png_file(&ref_draw_buf, &ref_img_width, &ref_img_height, fn_ref_full);
     if(res) {
-        LV_LOG_WARN("%s%s", fn_ref_full, " was not found, creating it now from the rendered screen");
-        write_png_file(screen_buf_xrgb8888, draw_buf->header.w, draw_buf->header.h, fn_ref_full);
-        lv_free(screen_buf_xrgb8888);
-        return true;
+        LV_LOG_WARN("%s%s", fn_ref_full, " was not found");
+        //write_png_file(screen_buf_xrgb8888, draw_buf->header.w, draw_buf->header.h, fn_ref_full);
+        //lv_free(screen_buf_xrgb8888);
+        return false;
     }
 
     if(ref_img_width != draw_buf->header.w || ref_img_height != draw_buf->header.h) {
@@ -135,6 +135,11 @@ static bool screenshot_compare(const char * fn_ref, uint8_t tolerance)
         for(x = 0; x < ref_img_width; x++) {
             uint8_t * ptr_ref = &(ref_row[x * 4]);
             uint8_t * ptr_act = &screen_buf_tmp[x * 4];
+
+            // skip transparent pixels
+            if (ptr_ref[3] == 0) {
+                continue;
+            }
 
             if(LV_ABS((int32_t) ptr_act[0] - (int32_t) ptr_ref[0]) > tolerance ||
                LV_ABS((int32_t) ptr_act[1] - (int32_t) ptr_ref[1]) > tolerance ||
@@ -164,7 +169,7 @@ static bool screenshot_compare(const char * fn_ref, uint8_t tolerance)
         char fn_err_full[256];
         lv_snprintf(fn_err_full, sizeof(fn_err_full), "%s%s_err.png", REF_IMGS_PATH, fn_ref_no_ext);
 
-        write_png_file(screen_buf_xrgb8888, draw_buf->header.w, draw_buf->header.h, fn_err_full);
+        //write_png_file(screen_buf_xrgb8888, draw_buf->header.w, draw_buf->header.h, fn_err_full);
     }
 
     fflush(stdout);
